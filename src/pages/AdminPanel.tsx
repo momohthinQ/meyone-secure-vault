@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { UserCog, Users, FileText, Shield, Activity, Settings, Search, MoreVertical } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { UserCog, Users, FileText, Shield, Settings, Search, MoreVertical, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface UserEntry {
   id: string;
@@ -39,20 +41,93 @@ const roleColors = {
 
 export default function AdminPanel() {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { isAdmin, isLoading } = useUserRole();
   const [search, setSearch] = useState("");
+  const [users, setUsers] = useState<UserEntry[]>(mockUsers);
 
-  const filteredUsers = mockUsers.filter(
+  // Redirect non-admin users
+  useEffect(() => {
+    if (!isLoading && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access the admin panel",
+        variant: "destructive",
+      });
+      navigate("/");
+    }
+  }, [isAdmin, isLoading, navigate, toast]);
+
+  const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(search.toLowerCase()) ||
       user.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleUserAction = (action: string, userName: string) => {
+  const handleViewDetails = (user: UserEntry) => {
     toast({
-      title: `Action: ${action}`,
-      description: `${action} action performed on ${userName}`,
+      title: "User Details",
+      description: `Viewing details for ${user.name} (${user.email})`,
     });
   };
+
+  const handleEditUser = (user: UserEntry) => {
+    toast({
+      title: "Edit User",
+      description: `Opening editor for ${user.name}`,
+    });
+  };
+
+  const handlePromoteToOfficer = (user: UserEntry) => {
+    setUsers(users.map(u => u.id === user.id ? { ...u, role: "officer" as const } : u));
+    toast({
+      title: "User Promoted",
+      description: `${user.name} has been promoted to Verification Officer`,
+    });
+  };
+
+  const handleDemoteToUser = (user: UserEntry) => {
+    setUsers(users.map(u => u.id === user.id ? { ...u, role: "user" as const } : u));
+    toast({
+      title: "User Demoted",
+      description: `${user.name} has been demoted to regular user`,
+    });
+  };
+
+  const handleDeactivate = (user: UserEntry) => {
+    setUsers(users.map(u => u.id === user.id ? { ...u, status: "inactive" as const } : u));
+    toast({
+      title: "User Deactivated",
+      description: `${user.name}'s account has been deactivated`,
+      variant: "destructive",
+    });
+  };
+
+  const handleActivate = (user: UserEntry) => {
+    setUsers(users.map(u => u.id === user.id ? { ...u, status: "active" as const } : u));
+    toast({
+      title: "User Activated",
+      description: `${user.name}'s account has been activated`,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <AlertTriangle className="h-12 w-12 text-destructive" />
+        <h2 className="text-xl font-semibold">Access Denied</h2>
+        <p className="text-muted-foreground">You don't have permission to access this page</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -67,7 +142,7 @@ export default function AdminPanel() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Total Users"
-          value={156}
+          value={users.length}
           icon={Users}
           variant="primary"
           trend={{ value: 12, positive: true }}
@@ -87,7 +162,7 @@ export default function AdminPanel() {
         />
         <StatsCard
           title="Active Officers"
-          value={12}
+          value={users.filter(u => u.role === "officer").length}
           icon={UserCog}
           variant="default"
         />
@@ -164,21 +239,34 @@ export default function AdminPanel() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleUserAction("View", user.name)}>
+                          <DropdownMenuItem onClick={() => handleViewDetails(user)}>
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUserAction("Edit", user.name)}>
+                          <DropdownMenuItem onClick={() => handleEditUser(user)}>
                             Edit User
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUserAction("Promote to Officer", user.name)}>
-                            Promote to Officer
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive"
-                            onClick={() => handleUserAction("Deactivate", user.name)}
-                          >
-                            Deactivate
-                          </DropdownMenuItem>
+                          {user.role === "user" && (
+                            <DropdownMenuItem onClick={() => handlePromoteToOfficer(user)}>
+                              Promote to Officer
+                            </DropdownMenuItem>
+                          )}
+                          {user.role === "officer" && (
+                            <DropdownMenuItem onClick={() => handleDemoteToUser(user)}>
+                              Demote to User
+                            </DropdownMenuItem>
+                          )}
+                          {user.status === "active" ? (
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => handleDeactivate(user)}
+                            >
+                              Deactivate
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleActivate(user)}>
+                              Activate
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -199,7 +287,7 @@ export default function AdminPanel() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockUsers
+                {users
                   .filter((u) => u.role === "officer" || u.role === "admin")
                   .map((user) => (
                     <div
@@ -240,7 +328,7 @@ export default function AdminPanel() {
                       10 document types configured
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">Manage</Button>
+                  <Button variant="outline" size="sm" onClick={() => toast({ title: "Manage Document Types", description: "Opening document types configuration" })}>Manage</Button>
                 </div>
               </div>
               <div className="p-4 rounded-lg border border-border">
@@ -251,7 +339,7 @@ export default function AdminPanel() {
                       45.2 GB of 100 GB used
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">View Details</Button>
+                  <Button variant="outline" size="sm" onClick={() => toast({ title: "Storage Details", description: "Viewing storage usage breakdown" })}>View Details</Button>
                 </div>
               </div>
               <div className="p-4 rounded-lg border border-border">
@@ -262,7 +350,7 @@ export default function AdminPanel() {
                       View system-wide activity logs
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">View Logs</Button>
+                  <Button variant="outline" size="sm" onClick={() => toast({ title: "System Logs", description: "Opening system activity logs" })}>View Logs</Button>
                 </div>
               </div>
             </CardContent>

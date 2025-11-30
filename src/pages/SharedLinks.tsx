@@ -23,7 +23,7 @@ const mockShareLinks: ShareLink[] = [
 
 export default function SharedLinks() {
   const { toast } = useToast();
-  const [links] = useState<ShareLink[]>(mockShareLinks);
+  const [links, setLinks] = useState<ShareLink[]>(mockShareLinks);
 
   const copyLink = (token: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/shared/${token}`);
@@ -33,10 +33,22 @@ export default function SharedLinks() {
     });
   };
 
+  const openLink = (token: string) => {
+    window.open(`${window.location.origin}/shared/${token}`, "_blank");
+  };
+
   const deleteLink = (id: string) => {
+    setLinks(links.filter(l => l.id !== id));
     toast({
       title: "Link Deleted",
       description: "The share link has been deactivated",
+    });
+  };
+
+  const createNewLink = () => {
+    toast({
+      title: "Create Share Link",
+      description: "Navigate to My Documents to create a share link for a document",
     });
   };
 
@@ -49,7 +61,7 @@ export default function SharedLinks() {
             Manage your secure document share links
           </p>
         </div>
-        <Button variant="hero">
+        <Button variant="hero" onClick={createNewLink}>
           <Plus className="h-5 w-5" />
           Create Share Link
         </Button>
@@ -64,60 +76,72 @@ export default function SharedLinks() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {links.map((link) => (
-              <div
-                key={link.id}
-                className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-lg bg-secondary/10">
-                    <Share2 className="h-5 w-5 text-secondary" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">{link.documentName}</h4>
-                    <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Expires: {link.expiresAt}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        {link.viewCount} views
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant={link.isActive ? "default" : "secondary"}>
-                        {link.isActive ? "Active" : "Expired"}
-                      </Badge>
-                      {link.hasPin && (
-                        <Badge variant="outline">PIN Protected</Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyLink(link.token)}
-                  >
-                    <Copy className="h-4 w-4 mr-1" />
-                    Copy
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Open
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteLink(link.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
+            {links.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Share2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No share links created yet</p>
+                <p className="text-sm mt-2">Create share links from your documents</p>
               </div>
-            ))}
+            ) : (
+              links.map((link) => (
+                <div
+                  key={link.id}
+                  className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 rounded-lg bg-secondary/10">
+                      <Share2 className="h-5 w-5 text-secondary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">{link.documentName}</h4>
+                      <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Expires: {link.expiresAt}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {link.viewCount} views
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant={link.isActive ? "default" : "secondary"}>
+                          {link.isActive ? "Active" : "Expired"}
+                        </Badge>
+                        {link.hasPin && (
+                          <Badge variant="outline">PIN Protected</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyLink(link.token)}
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copy
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => openLink(link.token)}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Open
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteLink(link.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
