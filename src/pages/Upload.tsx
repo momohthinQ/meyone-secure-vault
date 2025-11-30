@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Upload as UploadIcon, FileText, X, Shield, Lock, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ interface UploadedFile {
 
 export default function Upload() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [documentType, setDocumentType] = useState("");
@@ -298,7 +300,7 @@ export default function Upload() {
 
       {/* Submit Button */}
       <div className="flex justify-end gap-3">
-        <Button variant="outline">Cancel</Button>
+        <Button variant="outline" onClick={() => navigate("/documents")}>Cancel</Button>
         <Button
           variant="hero"
           disabled={files.length === 0 || files.some((f) => f.status !== "complete")}

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -45,6 +46,16 @@ const adminNavItems: NavItem[] = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSignOut = () => {
+    toast({
+      title: "Signed Out",
+      description: "You have been signed out successfully",
+    });
+    navigate("/");
+  };
 
   const NavItemComponent = ({ item }: { item: NavItem }) => {
     const isActive = location.pathname === item.path;
@@ -137,6 +148,7 @@ export function Sidebar() {
       {/* Bottom section */}
       <div className="p-3 border-t border-sidebar-border space-y-2">
         <button
+          onClick={handleSignOut}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg w-full transition-all duration-200",
             "text-sidebar-foreground/70 hover:bg-destructive/20 hover:text-destructive"

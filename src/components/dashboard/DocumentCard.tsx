@@ -1,4 +1,4 @@
-import { FileText, MoreVertical, Download, Share2, Eye, Shield, Clock, AlertCircle } from "lucide-react";
+import { FileText, MoreVertical, Download, Share2, Eye, Shield, Clock, AlertCircle, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export type DocumentStatus = "verified" | "pending" | "rejected";
 
@@ -49,9 +50,54 @@ const documentTypeIcons: Record<string, string> = {
 };
 
 export function DocumentCard({ name, type, uploadDate, status, hash, onClick }: DocumentCardProps) {
+  const { toast } = useToast();
   const statusInfo = statusConfig[status];
   const StatusIcon = statusInfo.icon;
   const typeIcon = documentTypeIcons[type] || documentTypeIcons["Default"];
+
+  const handlePreview = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast({
+      title: "Preview",
+      description: `Opening preview for ${name}`,
+    });
+  };
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast({
+      title: "Download Started",
+      description: `Downloading ${name}`,
+    });
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast({
+      title: "Share Link Created",
+      description: "A secure share link has been created",
+    });
+  };
+
+  const handleCopyHash = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hash) {
+      navigator.clipboard.writeText(hash);
+      toast({
+        title: "Hash Copied",
+        description: "Document hash copied to clipboard",
+      });
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast({
+      title: "Document Deleted",
+      description: `${name} has been moved to trash`,
+      variant: "destructive",
+    });
+  };
 
   return (
     <div 
@@ -81,20 +127,28 @@ export function DocumentCard({ name, type, uploadDate, status, hash, onClick }: 
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePreview}>
                   <Eye className="mr-2 h-4 w-4" />
                   Preview
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownload}>
                   <Download className="mr-2 h-4 w-4" />
                   Download
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShare}>
                   <Share2 className="mr-2 h-4 w-4" />
                   Share
                 </DropdownMenuItem>
+                {hash && (
+                  <DropdownMenuItem onClick={handleCopyHash}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy Hash
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={handleDelete}>
+                  Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
