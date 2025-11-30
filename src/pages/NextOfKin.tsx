@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { AddNextOfKinDialog } from "@/components/dialogs/AddNextOfKinDialog";
+import { EditNextOfKinDialog } from "@/components/dialogs/EditNextOfKinDialog";
 
 interface NextOfKinEntry {
   id: string;
@@ -21,7 +23,31 @@ const mockNextOfKin: NextOfKinEntry[] = [
 
 export default function NextOfKin() {
   const { toast } = useToast();
-  const [entries] = useState<NextOfKinEntry[]>(mockNextOfKin);
+  const [entries, setEntries] = useState<NextOfKinEntry[]>(mockNextOfKin);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<NextOfKinEntry | null>(null);
+
+  const handleAddContact = (data: { name: string; email: string; phone: string; relationship: string }) => {
+    const newEntry: NextOfKinEntry = {
+      id: Date.now().toString(),
+      ...data,
+      isVerified: false,
+    };
+    setEntries([...entries, newEntry]);
+    toast({
+      title: "Contact Added",
+      description: `${data.name} has been added. A verification email will be sent.`,
+    });
+  };
+
+  const handleEditContact = (data: { id: string; name: string; email: string; phone: string; relationship: string }) => {
+    setEntries(entries.map(e => e.id === data.id ? { ...e, ...data } : e));
+    toast({
+      title: "Contact Updated",
+      description: `${data.name}'s information has been updated.`,
+    });
+  };
 
   const resendVerification = (name: string) => {
     toast({
@@ -30,11 +56,17 @@ export default function NextOfKin() {
     });
   };
 
-  const removeEntry = (name: string) => {
+  const removeEntry = (id: string, name: string) => {
+    setEntries(entries.filter(e => e.id !== id));
     toast({
       title: "Next of Kin Removed",
       description: `${name} has been removed from your next of kin list`,
     });
+  };
+
+  const openEditDialog = (entry: NextOfKinEntry) => {
+    setEditingEntry(entry);
+    setEditDialogOpen(true);
   };
 
   return (
@@ -46,7 +78,7 @@ export default function NextOfKin() {
             Manage trusted contacts for legacy access
           </p>
         </div>
-        <Button variant="hero">
+        <Button variant="hero" onClick={() => setAddDialogOpen(true)}>
           <Plus className="h-5 w-5" />
           Add Contact
         </Button>
@@ -136,13 +168,13 @@ export default function NextOfKin() {
                         Resend Verification
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(entry)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeEntry(entry.name)}
+                      onClick={() => removeEntry(entry.id, entry.name)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -153,6 +185,18 @@ export default function NextOfKin() {
           </div>
         </CardContent>
       </Card>
+
+      <AddNextOfKinDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onAdd={handleAddContact}
+      />
+      <EditNextOfKinDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        entry={editingEntry}
+        onSave={handleEditContact}
+      />
     </div>
   );
 }

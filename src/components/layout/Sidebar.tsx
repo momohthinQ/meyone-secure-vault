@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -23,6 +24,8 @@ interface NavItem {
   label: string;
   path: string;
   badge?: number;
+  requiresOfficer?: boolean;
+  requiresAdmin?: boolean;
 }
 
 const mainNavItems: NavItem[] = [
@@ -40,7 +43,7 @@ const accountNavItems: NavItem[] = [
 ];
 
 const adminNavItems: NavItem[] = [
-  { icon: UserCog, label: "Admin Panel", path: "/admin" },
+  { icon: UserCog, label: "Admin Panel", path: "/admin", requiresAdmin: true },
 ];
 
 export function Sidebar() {
@@ -48,6 +51,7 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, isOfficer, isLoading } = useUserRole();
 
   const handleSignOut = () => {
     toast({
@@ -60,6 +64,10 @@ export function Sidebar() {
   const NavItemComponent = ({ item }: { item: NavItem }) => {
     const isActive = location.pathname === item.path;
     const Icon = item.icon;
+
+    // Check role-based access
+    if (item.requiresAdmin && !isAdmin) return null;
+    if (item.requiresOfficer && !isOfficer) return null;
 
     return (
       <NavLink
@@ -133,16 +141,18 @@ export function Sidebar() {
           ))}
         </div>
 
-        <div className="space-y-1">
-          {!collapsed && (
-            <p className="px-3 text-xs font-semibold text-sidebar-foreground/40 uppercase tracking-wider mb-2">
-              Admin
-            </p>
-          )}
-          {adminNavItems.map((item) => (
-            <NavItemComponent key={item.path} item={item} />
-          ))}
-        </div>
+        {!isLoading && adminNavItems.some(item => !item.requiresAdmin || isAdmin) && (
+          <div className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 text-xs font-semibold text-sidebar-foreground/40 uppercase tracking-wider mb-2">
+                Admin
+              </p>
+            )}
+            {adminNavItems.map((item) => (
+              <NavItemComponent key={item.path} item={item} />
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* Bottom section */}
