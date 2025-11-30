@@ -8,6 +8,11 @@ import Index from "./pages/Index";
 import Documents from "./pages/Documents";
 import Upload from "./pages/Upload";
 import Verification from "./pages/Verification";
+import SharedLinks from "./pages/SharedLinks";
+import AuditLog from "./pages/AuditLog";
+import NextOfKin from "./pages/NextOfKin";
+import Settings from "./pages/Settings";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,11 +29,11 @@ const App = () => (
           <Route path="/upload" element={<DashboardLayout><Upload /></DashboardLayout>} />
           <Route path="/verification" element={<DashboardLayout><Verification /></DashboardLayout>} />
           <Route path="/verify" element={<DashboardLayout><Verification /></DashboardLayout>} />
-          <Route path="/shared" element={<DashboardLayout><Documents /></DashboardLayout>} />
-          <Route path="/audit" element={<DashboardLayout><Documents /></DashboardLayout>} />
-          <Route path="/next-of-kin" element={<DashboardLayout><Documents /></DashboardLayout>} />
-          <Route path="/settings" element={<DashboardLayout><Documents /></DashboardLayout>} />
-          <Route path="/admin" element={<DashboardLayout><Documents /></DashboardLayout>} />
+          <Route path="/shared" element={<DashboardLayout><SharedLinks /></DashboardLayout>} />
+          <Route path="/audit" element={<DashboardLayout><AuditLog /></DashboardLayout>} />
+          <Route path="/next-of-kin" element={<DashboardLayout><NextOfKin /></DashboardLayout>} />
+          <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
+          <Route path="/admin" element={<DashboardLayout><AdminPanel /></DashboardLayout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
