@@ -10,6 +10,8 @@ interface UserRoleState {
   isAdmin: boolean;
   isOfficer: boolean;
   isUser: boolean;
+  isInstitution: boolean;
+  institutionStatus: string | null;
   userId: string | null;
 }
 
@@ -17,6 +19,7 @@ export function useUserRole(): UserRoleState {
   const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [institutionStatus, setInstitutionStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRole = async () => {
@@ -26,6 +29,7 @@ export function useUserRole(): UserRoleState {
         if (!user) {
           setRole(null);
           setUserId(null);
+          setInstitutionStatus(null);
           setIsLoading(false);
           return;
         }
@@ -43,6 +47,17 @@ export function useUserRole(): UserRoleState {
           setRole("user"); // Default to user role
         } else {
           setRole(roleData?.role || "user");
+
+          // If institution role, fetch institution status
+          if (roleData?.role === "institution") {
+            const { data: instData } = await supabase
+              .from("institutions")
+              .select("status")
+              .eq("user_id", user.id)
+              .maybeSingle();
+
+            setInstitutionStatus(instData?.status || null);
+          }
         }
       } catch (error) {
         console.error("Error in fetchRole:", error);
@@ -67,6 +82,8 @@ export function useUserRole(): UserRoleState {
     isAdmin: role === "admin",
     isOfficer: role === "officer" || role === "admin",
     isUser: role === "user",
+    isInstitution: role === "institution",
+    institutionStatus,
     userId,
   };
 }

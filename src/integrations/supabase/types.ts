@@ -159,6 +159,122 @@ export type Database = {
         }
         Relationships: []
       }
+      institution_documents: {
+        Row: {
+          batch_name: string | null
+          batch_year: number | null
+          created_at: string
+          document_type: string
+          file_hash: string | null
+          file_path: string
+          id: string
+          institution_id: string
+          issued_at: string | null
+          recipient_identifier: string | null
+          recipient_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          batch_name?: string | null
+          batch_year?: number | null
+          created_at?: string
+          document_type: string
+          file_hash?: string | null
+          file_path: string
+          id?: string
+          institution_id: string
+          issued_at?: string | null
+          recipient_identifier?: string | null
+          recipient_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_name?: string | null
+          batch_year?: number | null
+          created_at?: string
+          document_type?: string
+          file_hash?: string | null
+          file_path?: string
+          id?: string
+          institution_id?: string
+          issued_at?: string | null
+          recipient_identifier?: string | null
+          recipient_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institution_documents_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institutions: {
+        Row: {
+          address: string | null
+          approved_at: string | null
+          approved_by: string | null
+          contact_email: string
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          institution_type: Database["public"]["Enums"]["institution_type"]
+          logo_url: string | null
+          name: string
+          registration_number: string | null
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["institution_status"]
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution_type: Database["public"]["Enums"]["institution_type"]
+          logo_url?: string | null
+          name: string
+          registration_number?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["institution_status"]
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution_type?: Database["public"]["Enums"]["institution_type"]
+          logo_url?: string | null
+          name?: string
+          registration_number?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["institution_status"]
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       next_of_kin: {
         Row: {
           created_at: string
@@ -329,6 +445,59 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_requests: {
+        Row: {
+          created_at: string
+          document_reference: string
+          id: string
+          institution_id: string
+          recipient_identifier: string | null
+          recipient_name: string
+          requester_id: string
+          responded_at: string | null
+          responded_by: string | null
+          response_notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_reference: string
+          id?: string
+          institution_id: string
+          recipient_identifier?: string | null
+          recipient_name: string
+          requester_id: string
+          responded_at?: string | null
+          responded_by?: string | null
+          response_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_reference?: string
+          id?: string
+          institution_id?: string
+          recipient_identifier?: string | null
+          recipient_name?: string
+          requester_id?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          response_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_requests_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -343,7 +512,14 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "user" | "officer" | "admin"
+      app_role: "user" | "officer" | "admin" | "institution"
+      institution_status: "pending" | "approved" | "rejected" | "suspended"
+      institution_type:
+        | "university"
+        | "mda"
+        | "ngo"
+        | "private_company"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -471,7 +647,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["user", "officer", "admin"],
+      app_role: ["user", "officer", "admin", "institution"],
+      institution_status: ["pending", "approved", "rejected", "suspended"],
+      institution_type: [
+        "university",
+        "mda",
+        "ngo",
+        "private_company",
+        "other",
+      ],
     },
   },
 } as const
