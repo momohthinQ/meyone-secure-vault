@@ -13,6 +13,9 @@ import AuditLog from "./pages/AuditLog";
 import NextOfKin from "./pages/NextOfKin";
 import Settings from "./pages/Settings";
 import AdminPanel from "./pages/AdminPanel";
+import InstitutionRegister from "./pages/InstitutionRegister";
+import InstitutionPending from "./pages/InstitutionPending";
+import InstitutionDashboard from "./pages/InstitutionDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +37,10 @@ const App = () => (
           <Route path="/next-of-kin" element={<DashboardLayout><NextOfKin /></DashboardLayout>} />
           <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
           <Route path="/admin" element={<DashboardLayout><AdminPanel /></DashboardLayout>} />
+          {/* Institution routes */}
+          <Route path="/institution-register" element={<InstitutionRegister />} />
+          <Route path="/institution-pending" element={<InstitutionPending />} />
+          <Route path="/institution" element={<DashboardLayout><InstitutionDashboard /></DashboardLayout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

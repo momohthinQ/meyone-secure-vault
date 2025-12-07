@@ -1,29 +1,52 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { UserCog, Users, FileText, Shield, Settings, Search, MoreVertical, AlertTriangle } from "lucide-react";
+import { UserCog, Users, FileText, Shield, Settings, Search, MoreVertical, AlertTriangle, Building2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserEntry {
   id: string;
   name: string;
   email: string;
-  role: "user" | "officer" | "admin";
+  role: "user" | "officer" | "admin" | "institution";
   status: "active" | "inactive";
   documentsCount: number;
   lastActive: string;
+}
+
+interface Institution {
+  id: string;
+  user_id: string;
+  name: string;
+  institution_type: string;
+  registration_number: string | null;
+  contact_email: string;
+  contact_phone: string | null;
+  status: string;
+  created_at: string;
+  description: string | null;
 }
 
 const mockUsers: UserEntry[] = [
@@ -37,6 +60,15 @@ const roleColors = {
   user: "bg-muted text-muted-foreground",
   officer: "bg-secondary/10 text-secondary",
   admin: "bg-primary/10 text-primary",
+  institution: "bg-blue-500/10 text-blue-600",
+};
+
+const institutionTypeLabels: Record<string, string> = {
+  university: "University",
+  mda: "MDA",
+  ngo: "NGO",
+  private_company: "Private Company",
+  other: "Other",
 };
 
 export default function AdminPanel() {
@@ -45,6 +77,34 @@ export default function AdminPanel() {
   const { isAdmin, isLoading } = useUserRole();
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<UserEntry[]>(mockUsers);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [institutionsLoading, setInstitutionsLoading] = useState(true);
+  const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && isAdmin) {
+      fetchInstitutions();
+    }
+  }, [isAdmin, isLoading]);
+
+  const fetchInstitutions = async () => {
+    setInstitutionsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("institutions")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setInstitutions(data || []);
+    } catch (error) {
+      console.error("Error fetching institutions:", error);
+    } finally {
+      setInstitutionsLoading(false);
+    }
+  };
 
   // Redirect non-admin users
   useEffect(() => {
@@ -111,6 +171,96 @@ export default function AdminPanel() {
     });
   };
 
+  const handleApproveInstitution = async (institution: Institution) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from("institutions")
+        .update({
+          status: "approved",
+          approved_by: user?.id,
+          approved_at: new Date().toISOString(),
+        })
+        .eq("id", institution.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Institution Approved",
+        description: `${institution.name} has been approved and can now access their dashboard`,
+      });
+
+      fetchInstitutions();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve institution",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectInstitution = async () => {
+    if (!selectedInstitution) return;
+
+    try {
+      const { error } = await supabase
+        .from("institutions")
+        .update({
+          status: "rejected",
+          rejection_reason: rejectionReason,
+        })
+        .eq("id", selectedInstitution.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Institution Rejected",
+        description: `${selectedInstitution.name} has been rejected`,
+        variant: "destructive",
+      });
+
+      setIsRejectDialogOpen(false);
+      setSelectedInstitution(null);
+      setRejectionReason("");
+      fetchInstitutions();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject institution",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSuspendInstitution = async (institution: Institution) => {
+    try {
+      const { error } = await supabase
+        .from("institutions")
+        .update({ status: "suspended" })
+        .eq("id", institution.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Institution Suspended",
+        description: `${institution.name} has been suspended`,
+        variant: "destructive",
+      });
+
+      fetchInstitutions();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to suspend institution",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const pendingInstitutions = institutions.filter((i) => i.status === "pending");
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -134,12 +284,12 @@ export default function AdminPanel() {
       <div>
         <h1 className="text-2xl lg:text-3xl font-bold">Admin Panel</h1>
         <p className="text-muted-foreground mt-1">
-          Manage users, officers, and system settings
+          Manage users, institutions, officers, and system settings
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatsCard
           title="Total Users"
           value={users.length}
@@ -148,16 +298,21 @@ export default function AdminPanel() {
           trend={{ value: 12, positive: true }}
         />
         <StatsCard
+          title="Institutions"
+          value={institutions.length}
+          icon={Building2}
+          variant="secondary"
+        />
+        <StatsCard
+          title="Pending Approvals"
+          value={pendingInstitutions.length}
+          icon={Clock}
+          variant="default"
+        />
+        <StatsCard
           title="Total Documents"
           value={1248}
           icon={FileText}
-          variant="secondary"
-          trend={{ value: 8, positive: true }}
-        />
-        <StatsCard
-          title="Verified Documents"
-          value={892}
-          icon={Shield}
           variant="success"
         />
         <StatsCard
@@ -168,8 +323,15 @@ export default function AdminPanel() {
         />
       </div>
 
-      <Tabs defaultValue="users" className="space-y-6">
+      <Tabs defaultValue="institutions" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="institutions">
+            <Building2 className="h-4 w-4 mr-2" />
+            Institutions
+            {pendingInstitutions.length > 0 && (
+              <Badge className="ml-2 bg-primary text-primary-foreground">{pendingInstitutions.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="users">
             <Users className="h-4 w-4 mr-2" />
             Users
@@ -183,6 +345,118 @@ export default function AdminPanel() {
             System
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="institutions" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Institution Management</CardTitle>
+              <CardDescription>
+                Review and approve institution registrations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {institutionsLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading institutions...</div>
+              ) : institutions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No institution registrations yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {institutions.map((institution) => (
+                    <div
+                      key={institution.id}
+                      className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-hero flex items-center justify-center text-lg font-bold text-white">
+                          {institution.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">{institution.name}</h4>
+                            <Badge variant="outline">
+                              {institutionTypeLabels[institution.institution_type] || institution.institution_type}
+                            </Badge>
+                            <Badge
+                              className={
+                                institution.status === "pending"
+                                  ? "bg-yellow-500/10 text-yellow-600"
+                                  : institution.status === "approved"
+                                  ? "bg-green-500/10 text-green-600"
+                                  : institution.status === "rejected"
+                                  ? "bg-red-500/10 text-red-600"
+                                  : "bg-orange-500/10 text-orange-600"
+                              }
+                            >
+                              {institution.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {institution.contact_email}
+                            {institution.registration_number && ` · Reg: ${institution.registration_number}`}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Registered: {new Date(institution.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {institution.status === "pending" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => {
+                                setSelectedInstitution(institution);
+                                setIsRejectDialogOpen(true);
+                              }}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => handleApproveInstitution(institution)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                          </>
+                        )}
+                        {institution.status === "approved" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-orange-600 hover:bg-orange-50"
+                            onClick={() => handleSuspendInstitution(institution)}
+                          >
+                            Suspend
+                          </Button>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                            <DropdownMenuItem>View Documents</DropdownMenuItem>
+                            <DropdownMenuItem>Contact</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="users" className="space-y-4">
           <Card>
@@ -357,6 +631,43 @@ export default function AdminPanel() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Reject Institution Dialog */}
+      <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Institution</DialogTitle>
+            <DialogDescription>
+              Provide a reason for rejecting {selectedInstitution?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejectionReason">Reason for Rejection</Label>
+              <Textarea
+                id="rejectionReason"
+                placeholder="Please provide a detailed reason..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRejectInstitution}
+                disabled={!rejectionReason.trim()}
+                className="flex-1"
+              >
+                Reject Institution
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
