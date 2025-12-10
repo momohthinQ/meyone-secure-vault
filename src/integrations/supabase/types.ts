@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          institution_id: string
+          is_active: boolean
+          key_hash: string
+          last_used_at: string | null
+          name: string
+          permissions: Json
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          institution_id: string
+          is_active?: boolean
+          key_hash: string
+          last_used_at?: string | null
+          name: string
+          permissions?: Json
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          institution_id?: string
+          is_active?: boolean
+          key_hash?: string
+          last_used_at?: string | null
+          name?: string
+          permissions?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -49,6 +93,59 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      chatbot_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chatbot_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_hashes: {
         Row: {
@@ -120,56 +217,110 @@ export type Database = {
       documents: {
         Row: {
           created_at: string
+          digital_signature: string | null
           document_type: string
           encryption_iv: string | null
           file_path: string
           file_size: number | null
           id: string
+          issuer_institution_id: string | null
           mime_type: string | null
           name: string
+          qr_token: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          digital_signature?: string | null
           document_type: string
           encryption_iv?: string | null
           file_path: string
           file_size?: number | null
           id?: string
+          issuer_institution_id?: string | null
           mime_type?: string | null
           name: string
+          qr_token?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          digital_signature?: string | null
           document_type?: string
           encryption_iv?: string | null
           file_path?: string
           file_size?: number | null
           id?: string
+          issuer_institution_id?: string | null
           mime_type?: string | null
           name?: string
+          qr_token?: string | null
           status?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documents_issuer_institution_id_fkey"
+            columns: ["issuer_institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institution_analytics: {
+        Row: {
+          created_at: string
+          document_id: string | null
+          event_type: string
+          id: string
+          institution_id: string
+          metadata: Json | null
+        }
+        Insert: {
+          created_at?: string
+          document_id?: string | null
+          event_type: string
+          id?: string
+          institution_id: string
+          metadata?: Json | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string | null
+          event_type?: string
+          id?: string
+          institution_id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institution_analytics_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       institution_documents: {
         Row: {
           batch_name: string | null
           batch_year: number | null
           created_at: string
+          digital_signature: string | null
           document_type: string
           file_hash: string | null
           file_path: string
           id: string
           institution_id: string
           issued_at: string | null
+          qr_token: string | null
           recipient_identifier: string | null
           recipient_name: string
           status: string
@@ -179,12 +330,14 @@ export type Database = {
           batch_name?: string | null
           batch_year?: number | null
           created_at?: string
+          digital_signature?: string | null
           document_type: string
           file_hash?: string | null
           file_path: string
           id?: string
           institution_id: string
           issued_at?: string | null
+          qr_token?: string | null
           recipient_identifier?: string | null
           recipient_name: string
           status?: string
@@ -194,12 +347,14 @@ export type Database = {
           batch_name?: string | null
           batch_year?: number | null
           created_at?: string
+          digital_signature?: string | null
           document_type?: string
           file_hash?: string | null
           file_path?: string
           id?: string
           institution_id?: string
           issued_at?: string | null
+          qr_token?: string | null
           recipient_identifier?: string | null
           recipient_name?: string
           status?: string
@@ -274,6 +429,60 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          institution_id: string | null
+          is_read: boolean
+          parent_message_id: string | null
+          recipient_id: string | null
+          sender_id: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          is_read?: boolean
+          parent_message_id?: string | null
+          recipient_id?: string | null
+          sender_id: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          is_read?: boolean
+          parent_message_id?: string | null
+          recipient_id?: string | null
+          sender_id?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       next_of_kin: {
         Row: {
@@ -444,6 +653,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      verification_logs: {
+        Row: {
+          document_hash_at_verification: string | null
+          document_id: string | null
+          id: string
+          institution_document_id: string | null
+          metadata: Json | null
+          verification_result: string
+          verified_at: string
+          verifier_ip: string | null
+          verifier_user_agent: string | null
+        }
+        Insert: {
+          document_hash_at_verification?: string | null
+          document_id?: string | null
+          id?: string
+          institution_document_id?: string | null
+          metadata?: Json | null
+          verification_result: string
+          verified_at?: string
+          verifier_ip?: string | null
+          verifier_user_agent?: string | null
+        }
+        Update: {
+          document_hash_at_verification?: string | null
+          document_id?: string | null
+          id?: string
+          institution_document_id?: string | null
+          metadata?: Json | null
+          verification_result?: string
+          verified_at?: string
+          verifier_ip?: string | null
+          verifier_user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_logs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_logs_institution_document_id_fkey"
+            columns: ["institution_document_id"]
+            isOneToOne: false
+            referencedRelation: "institution_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       verification_requests: {
         Row: {
